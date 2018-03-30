@@ -12,6 +12,8 @@ namespace PerfectDay
     public class EntryPoint
     {
         private static RelationshipGroup ZombiesGroup = new RelationshipGroup("ZOMBIES");
+        private static AnimationSet zombieWalk = new AnimationSet("move_m@drunk@verydrunk");
+        private static AnimationSet zombieEating = new AnimationSet("move_ped_crouched");
 
         public static void Main()
         {
@@ -29,21 +31,28 @@ namespace PerfectDay
 
         public static Ped GetClosestLivingHumanNear(Ped ped)
         {
-            Ped[] nearbyPeds = ped.GetNearbyPeds(16);
-            for(int i = 0; i<nearbyPeds.Length; i++)
+            // This is an expensive check to do every tick so let's ease off
+            GameFiber.Sleep(2000);
+            if (ped)
             {
-                if (nearbyPeds[i].Exists() && !nearbyPeds[i].RelationshipGroup.Equals(ZombiesGroup) &&
-                    nearbyPeds[i].IsAlive)
-                    return nearbyPeds[i];
+                Ped[] nearbyPeds = ped.GetNearbyPeds(6);
+                for (int i = 0; i < nearbyPeds.Length; i++)
+                {
+                    if (nearbyPeds[i].Exists() && !nearbyPeds[i].RelationshipGroup.Equals(ZombiesGroup) &&
+                        nearbyPeds[i].IsAlive)
+                        return nearbyPeds[i];
+                }
             }
             return null;
         }
 
         public static Ped GetClosestLivingHumanNearThatIsNot(Ped notThisPed, Ped ped)
         {
+            // This is an expensive check to do every tick so let's ease off
+            GameFiber.Sleep(2000);
             if (notThisPed && ped)
-            {
-                Ped[] nearbyPeds = ped.GetNearbyPeds(16);
+            {                         
+                Ped[] nearbyPeds = ped.GetNearbyPeds(6);
                 for (int i = 0; i < nearbyPeds.Length; i++)
                 {
                     if (nearbyPeds[i].Equals(notThisPed))
@@ -57,6 +66,14 @@ namespace PerfectDay
             return null;
         }
 
+        public static void reanimate(Ped deadPed)
+        {
+            GameFiber.StartNew(() => {                
+                GameFiber.Sleep(5000);                
+                zombify(deadPed);
+            });           
+        }
+
         public static void zombify(Ped zombie)
         {            
             Rage.Native.NativeFunction.Natives.APPLY_PED_DAMAGE_PACK(zombie, "Fall", 100, 100);
@@ -65,16 +82,15 @@ namespace PerfectDay
             {
                 return;
             }
-
-            AnimationSet animationSet = new AnimationSet("move_m@drunk@verydrunk");
-            animationSet.LoadAndWait();
-            zombie.MovementAnimationSet = animationSet;
+            
+            zombie.Tasks.Clear();            
+            zombieWalk.LoadAndWait();
+            zombie.MovementAnimationSet = zombieWalk;     
 
             zombie.RelationshipGroup = ZombiesGroup;
             zombie.StaysInGroups = false;
             zombie.BlockPermanentEvents = true;
-
-            zombie.Tasks.Wander();
+            zombie.IsCollisionEnabled = true;
 
             try
             {
@@ -87,16 +103,39 @@ namespace PerfectDay
 
                     if (zombie.IsAlive)
                     {
+                        if(zombie && zombie.Exists() && zombie.IsAlive) zombie.Tasks.Wander();
                         if (!zombie.IsInMeleeCombat || zombie.IsStill)
                         {
                             Ped closestHuman = GetClosestLivingHumanNear(zombie);
                             if (closestHuman)
                             {
-                                FollowHuman:
+                            FollowHuman:
+                                zombie.MovementAnimationSet = zombieWalk;
                                 zombie.Tasks.FollowToOffsetFromEntity(closestHuman, Vector3.Zero);
 
                                 while (true)
                                 {
+                                    /**
+                                     *  Keep checking how close we are to the target and once we're are near,                                     * 
+                                     *  make them fall and reanimate 
+                                     */
+                                    if (zombie && closestHuman)
+                                    {
+                                        if (zombie.DistanceTo(closestHuman) <= 1) {                                            
+
+                                            Rage.Native.NativeFunction.Natives.SET_PED_TO_RAGDOLL(closestHuman, 5000, 0, 0, 1, 1, 0);
+                                            zombieEating.LoadAndWait();
+                                            zombie.MovementAnimationSet = zombieEating;                                                                                       
+                                            GameFiber.Sleep(5000);
+                                            zombie.MovementAnimationSet = zombieWalk;
+                                            reanimate(closestHuman);
+                                            break;
+                                        }
+                                    }
+                                    /**
+                                     *  Keep checking for any human that is closer than the one we are pursuing, and start following
+                                     *  them instead                                    
+                                     */
                                     Ped nextClosestHuman = GetClosestLivingHumanNearThatIsNot(closestHuman, zombie);
                                     if (nextClosestHuman && zombie)
                                     {
@@ -107,9 +146,13 @@ namespace PerfectDay
                                         }
                                     }
                                     GameFiber.Yield();
-                                }                                
-                            } else
-                                zombie.Tasks.Wander();
+                                }
+                            }
+                            else
+                            {
+                                if (zombie && zombie.Exists() && zombie.IsAlive)
+                                    zombie.Tasks.Wander();
+                            }  
                         }
                     }
                     GameFiber.Yield();
@@ -127,7 +170,9 @@ namespace PerfectDay
 
         public static void SpawnZombie()
         {
-            zombify(GetClosestLivingHumanNear(Game.LocalPlayer.Character));
+            Ped playerPed = Game.LocalPlayer.Character;
+            if(playerPed)
+                zombify(GetClosestLivingHumanNear(playerPed));
         }
             
     }        
