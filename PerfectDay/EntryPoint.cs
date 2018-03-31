@@ -76,14 +76,16 @@ namespace PerfectDay
 
         public static void zombify(Ped zombie)
         {            
-            Rage.Native.NativeFunction.Natives.APPLY_PED_DAMAGE_PACK(zombie, "Fall", 100, 100);
-            
+            Rage.Native.NativeFunction.Natives.APPLY_PED_DAMAGE_PACK(zombie, "Fall", 100, 100);            
+
             if (zombie == null)
             {
                 return;
             }
             
-            zombie.Tasks.Clear();            
+            if(zombie.Exists() && zombie.IsValid())
+                zombie.Tasks.Clear();            
+
             zombieWalk.LoadAndWait();
             zombie.MovementAnimationSet = zombieWalk;     
 
@@ -109,25 +111,26 @@ namespace PerfectDay
                             Ped closestHuman = GetClosestLivingHumanNear(zombie);
                             if (closestHuman)
                             {
-                            FollowHuman:
+                                FollowHuman:
                                 zombie.MovementAnimationSet = zombieWalk;
                                 zombie.Tasks.FollowToOffsetFromEntity(closestHuman, Vector3.Zero);
 
                                 while (true)
                                 {
                                     /**
-                                     *  Keep checking how close we are to the target and once we're are near,                                     * 
+                                     *  Keep checking how close we are to the target and once we're are near,
                                      *  make them fall and reanimate 
                                      */
                                     if (zombie && closestHuman)
                                     {
-                                        if (zombie.DistanceTo(closestHuman) <= 1) {                                            
-
-                                            Rage.Native.NativeFunction.Natives.SET_PED_TO_RAGDOLL(closestHuman, 5000, 0, 0, 1, 1, 0);
+                                        if (zombie.DistanceTo(closestHuman) <= 1) {
+                                            
+                                            Rage.Native.NativeFunction.Natives.SET_PED_TO_RAGDOLL(closestHuman, 5000, 5000, 0, 1, 1, 0);                                            
                                             zombieEating.LoadAndWait();
-                                            zombie.MovementAnimationSet = zombieEating;                                                                                       
-                                            GameFiber.Sleep(5000);
-                                            zombie.MovementAnimationSet = zombieWalk;
+                                            zombie.MovementAnimationSet = zombieEating;
+                                            Vector3 zombiePosition = zombie.GetOffsetPositionFront(0);
+                                            Rage.Native.NativeFunction.Natives.ADD_SHOCKING_EVENT_AT_POSITION<uint>(114, zombiePosition.X, zombiePosition.Y, zombiePosition.Z, 0);                                            
+                                            GameFiber.Sleep(2000);                                            
                                             reanimate(closestHuman);
                                             break;
                                         }
