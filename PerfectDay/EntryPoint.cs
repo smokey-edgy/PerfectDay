@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rage;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 [assembly: Rage.Attributes.Plugin("A Perfect Day", Description = "The Perfect Day Zombie Outbreak.", Author = "Smoke")]
 namespace PerfectDay
@@ -20,6 +22,20 @@ namespace PerfectDay
             Game.Console.Print("***** PerfectDay has been loaded.");
             GameFiber.StartNew(EntryPoint.SpawnZombie);
         }
+
+        public static void PlayZombieSound(Ped ped)
+        {
+            WaveOutEvent outputDevice = new WaveOutEvent();
+            AudioFileReader audioFile = new AudioFileReader(@"Plugins\zombie.wav");
+            var volumeProvider = new VolumeSampleProvider(audioFile);
+            volumeProvider.Volume = 0.3f;
+            var panner = new PanningSampleProvider(volumeProvider);
+            panner.PanStrategy = new SquareRootPanStrategy();
+            panner.Pan = -1.0f; // pan 50% left                   
+            outputDevice.Init(panner);
+            outputDevice.Play();
+        }
+        
 
         [Rage.Attributes.ConsoleCommand(Description = "Spawns a zombie", Name = "SpawnZombie")]
         public static void Command_SpawnZombie(int howMany)
