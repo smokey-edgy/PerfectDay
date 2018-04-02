@@ -35,7 +35,7 @@ namespace PerfectDay
                 volumeProvider.Volume = 0.0f;
                 var panner = new PanningSampleProvider(volumeProvider);
                 panner.PanStrategy = new SquareRootPanStrategy();
-                panner.Pan = -1.0f; // pan 50% left                   
+                panner.Pan = 0f;
                 outputDevice.Init(panner);
                 outputDevice.Play();
 
@@ -44,8 +44,9 @@ namespace PerfectDay
                 {
                     float distance = player.DistanceTo(zombie);                    
                     float volumeCalculation = (100.0f - (distance * 5)) / 100.0f;
-                    volumeProvider.Volume = volumeCalculation <= 0 ? 0 : volumeCalculation;                   
-                    
+                    volumeProvider.Volume = volumeCalculation <= 0 ? 0 : volumeCalculation;
+                    Vector3 zombieVector = player.GetPositionOffset(zombie.Position).ToNormalized();
+                    panner.Pan = zombieVector.X;                    
                     GameFiber.Yield();
                 }                
             });
