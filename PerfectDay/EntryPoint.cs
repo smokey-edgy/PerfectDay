@@ -23,17 +23,32 @@ namespace PerfectDay
             GameFiber.StartNew(EntryPoint.SpawnZombie);
         }
 
-        public static void PlayZombieSound(Ped ped)
+        public static void PlayZombieSound(Ped zombie)
         {
-            WaveOutEvent outputDevice = new WaveOutEvent();
-            AudioFileReader audioFile = new AudioFileReader(@"Plugins\zombie.wav");
-            var volumeProvider = new VolumeSampleProvider(audioFile);
-            volumeProvider.Volume = 0.3f;
-            var panner = new PanningSampleProvider(volumeProvider);
-            panner.PanStrategy = new SquareRootPanStrategy();
-            panner.Pan = -1.0f; // pan 50% left                   
-            outputDevice.Init(panner);
-            outputDevice.Play();
+            
+            GameFiber.StartNew(() => {
+
+                WaveOutEvent outputDevice = new WaveOutEvent();
+                AudioFileReader audioFile = new AudioFileReader(@"Plugins\zombie.wav");
+                var volumeProvider = new VolumeSampleProvider(audioFile);
+        
+                volumeProvider.Volume = 0.0f;
+                var panner = new PanningSampleProvider(volumeProvider);
+                panner.PanStrategy = new SquareRootPanStrategy();
+                panner.Pan = -1.0f; // pan 50% left                   
+                outputDevice.Init(panner);
+                outputDevice.Play();
+
+                Ped player = Game.LocalPlayer.Character;
+                while(zombie && zombie.Exists())
+                {
+                    float distance = player.DistanceTo(zombie);                    
+                    float volumeCalculation = (100.0f - (distance * 5)) / 100.0f;
+                    volumeProvider.Volume = volumeCalculation <= 0 ? 0 : volumeCalculation;                   
+                    
+                    GameFiber.Yield();
+                }                
+            });
         }
         
 
@@ -109,6 +124,8 @@ namespace PerfectDay
             zombie.StaysInGroups = false;
             zombie.BlockPermanentEvents = true;
             zombie.IsCollisionEnabled = true;
+
+            PlayZombieSound(zombie);
 
             try
             {
