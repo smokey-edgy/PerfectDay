@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Rage;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using Extensions;
 
 [assembly: Rage.Attributes.Plugin("A Perfect Day", Description = "The Perfect Day Zombie Outbreak.", Author = "Smoke")]
 namespace PerfectDay
@@ -16,42 +17,19 @@ namespace PerfectDay
         private static RelationshipGroup ZombiesGroup = new RelationshipGroup("ZOMBIES");
         private static AnimationSet zombieWalk = new AnimationSet("move_m@drunk@verydrunk");
         private static AnimationSet zombieEating = new AnimationSet("move_ped_crouched");
+        
+        public static bool IsGameReady()
+        {
+            return !Game.IsLoading;          
+        }
 
         public static void Main()
         {
             Game.Console.Print("***** PerfectDay has been loaded.");
-            GameFiber.StartNew(EntryPoint.SpawnZombie);
-        }
 
-        public static void PlayZombieSound(Ped zombie)
-        {
-            
-            GameFiber.StartNew(() => {
-
-                WaveOutEvent outputDevice = new WaveOutEvent();
-                AudioFileReader audioFile = new AudioFileReader(@"Plugins\zombie.wav");
-                var volumeProvider = new VolumeSampleProvider(audioFile);
-        
-                volumeProvider.Volume = 0.0f;
-                var panner = new PanningSampleProvider(volumeProvider);
-                panner.PanStrategy = new SquareRootPanStrategy();
-                panner.Pan = 0f;
-                outputDevice.Init(panner);
-                outputDevice.Play();
-
-                Ped player = Game.LocalPlayer.Character;
-                while(zombie && zombie.Exists())
-                {
-                    float distance = player.DistanceTo(zombie);                    
-                    float volumeCalculation = (100.0f - (distance * 5)) / 100.0f;
-                    volumeProvider.Volume = volumeCalculation <= 0 ? 0 : volumeCalculation;
-                    Vector3 zombieVector = player.GetPositionOffset(zombie.Position).ToNormalized();
-                    panner.Pan = zombieVector.X;                    
-                    GameFiber.Yield();
-                }                
-            });
-        }
-        
+            GameFiber.WaitUntil(IsGameReady);
+            GameFiber.StartNew(SpawnZombie);
+        }                        
 
         [Rage.Attributes.ConsoleCommand(Description = "Spawns a zombie", Name = "SpawnZombie")]
         public static void Command_SpawnZombie(int howMany)
@@ -126,7 +104,7 @@ namespace PerfectDay
             zombie.BlockPermanentEvents = true;
             zombie.IsCollisionEnabled = true;
 
-            PlayZombieSound(zombie);
+            zombie.PlaySound(@"Plugins\zombie.wav");            
 
             try
             {
