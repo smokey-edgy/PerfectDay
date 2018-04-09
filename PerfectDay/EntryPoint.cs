@@ -33,6 +33,22 @@ namespace PerfectDay
             //GameFiber.StartNew(CreateMayhemAndPanic);
         }
 
+        [Rage.Attributes.ConsoleCommand(Description = "Create an emergency incident", Name = "Emergency")]
+        public static void CreateEmergencyIncident()
+        {
+            GameFiber.StartNew(() =>
+            {               
+                Vehicle policeCar = new Vehicle(new Model("Police"), Game.LocalPlayer.Character.GetOffsetPositionFront(20.0f));
+                policeCar.IsSirenOn = true;                
+                Ped ped = new Ped(new Model(1581098148), policeCar.Position, policeCar.Heading);
+                ped.BlockPermanentEvents = true;
+                ped.WarpIntoVehicle(policeCar, 0);
+                ped.Tasks.ClearImmediately();
+                policeCar.TopSpeed = 200.0f;
+                ped.Tasks.CruiseWithVehicle(policeCar, 200.0f, VehicleDrivingFlags.Emergency);                
+            });
+        }
+
         [Rage.Attributes.ConsoleCommand(Description = "Create mayhem and panic", Name = "Mayhem")]
         public static void CreateMayhemAndPanic()
         {
