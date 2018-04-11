@@ -36,17 +36,33 @@ namespace PerfectDay
         [Rage.Attributes.ConsoleCommand(Description = "Create an emergency incident", Name = "Emergency")]
         public static void CreateEmergencyIncident()
         {
+
+            
             GameFiber.StartNew(() =>
-            {               
-                Vehicle policeCar = new Vehicle(new Model("Police"), Game.LocalPlayer.Character.GetOffsetPositionFront(20.0f));
-                policeCar.IsSirenOn = true;                
-                Ped ped = new Ped(new Model(1581098148), policeCar.Position, policeCar.Heading);
-                ped.BlockPermanentEvents = true;
-                ped.WarpIntoVehicle(policeCar, 0);
-                ped.Tasks.ClearImmediately();
-                policeCar.TopSpeed = 200.0f;
-                ped.Tasks.CruiseWithVehicle(policeCar, 200.0f, VehicleDrivingFlags.Emergency);                
+            {
+                SpawnEmergencyVehicle(new Model("Police"), new Model(1581098148));
+                //SpawnEmergencyVehicle(new Model(1171614426), new Model(1286380898));          
             });
+        }
+
+        public static void SpawnEmergencyVehicle(Model carModel, Model pedModel)
+        {
+            if (!Game.LocalPlayer.Character.IsInAnyVehicle(false))
+                return;
+            
+            Vehicle playerVehicle = Game.LocalPlayer.Character.CurrentVehicle;
+            Vector3 spawnPosition = Vector3.Negate(playerVehicle.GetOffsetPositionFront(20.0f));            
+
+            Vehicle policeCar = new Vehicle(carModel, spawnPosition, playerVehicle.Heading);
+            Rage.Native.NativeFunction.Natives.SET_VEHICLE_FORWARD_SPEED(policeCar, playerVehicle.Speed);
+            policeCar.IsSirenOn = true;
+            Ped ped = new Ped(pedModel, policeCar.Position, policeCar.Heading);
+            ped.WarpIntoVehicle(policeCar, -1);
+            
+            policeCar.TopSpeed = 200.0f;
+            TaskSequence taskSequence = new TaskSequence(ped);            
+            taskSequence.Tasks.DriveToPosition(policeCar, World.GetNextPositionOnStreet(policeCar.GetOffsetPositionFront(1000.0f)), 200.0f, VehicleDrivingFlags.Emergency, 10.0f);
+            taskSequence.Execute();        
         }
 
         [Rage.Attributes.ConsoleCommand(Description = "Create mayhem and panic", Name = "Mayhem")]
@@ -55,11 +71,11 @@ namespace PerfectDay
             while (true)
             {
                 Entity[] nearbyCars = World.GetEntities(Game.LocalPlayer.Character.GetOffsetPositionFront(200.0f), 150.0f, GetEntitiesFlags.ConsiderCars);
-
+                
                 foreach (Vehicle vehicle in nearbyCars)
                 {
                     if (vehicle && vehicle.IsValid())
-                    {
+                    {                        
                         Ped ped = vehicle.Driver;
                         if (ped && ped.IsValid() && !ped.IsLocalPlayer)
                         {
@@ -73,7 +89,7 @@ namespace PerfectDay
                         }
                     }
                 }
-                GameFiber.Sleep(5000);
+                GameFiber.Sleep(1500);
             }
         }
 
