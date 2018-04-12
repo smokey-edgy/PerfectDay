@@ -51,7 +51,9 @@ namespace PerfectDay
                 return;
             
             Vehicle playerVehicle = Game.LocalPlayer.Character.CurrentVehicle;
-            Vector3 spawnPosition = Vector3.Negate(playerVehicle.GetOffsetPositionFront(20.0f));            
+            Vector3 backwardVector = Vector3.Negate(playerVehicle.ForwardVector);
+            Vector3 behindVehicle = Vector3.Multiply(backwardVector, 20.0f);
+            Vector3 spawnPosition = Vector3.Add(playerVehicle.RearPosition, behindVehicle);
 
             Vehicle policeCar = new Vehicle(carModel, spawnPosition, playerVehicle.Heading);
             Rage.Native.NativeFunction.Natives.SET_VEHICLE_FORWARD_SPEED(policeCar, playerVehicle.Speed);
