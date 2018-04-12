@@ -59,7 +59,7 @@ namespace PerfectDay
             Rage.Native.NativeFunction.Natives.SET_VEHICLE_FORWARD_SPEED(emergencyVehicle, playerVehicle.Speed);
             emergencyVehicle.IsSirenOn = true;
 
-            Ped ped = Rage.Native.NativeFunction.Natives.CREATE_PED_INSIDE_VEHICLE<Ped>(emergencyVehicle, 20, -1286380898, -1, 0, 1);
+            Ped ped = Rage.Native.NativeFunction.Natives.CREATE_PED_INSIDE_VEHICLE<Ped>(emergencyVehicle, pedType, pedModel, -1, 0, 1);
                         
             emergencyVehicle.TopSpeed = 200.0f;
             TaskSequence taskSequence = new TaskSequence(ped);            
