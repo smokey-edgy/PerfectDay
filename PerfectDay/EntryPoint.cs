@@ -40,30 +40,30 @@ namespace PerfectDay
             
             GameFiber.StartNew(() =>
             {
-                SpawnEmergencyVehicle(new Model("Police"), new Model(1581098148));
-                //SpawnEmergencyVehicle(new Model(1171614426), new Model(1286380898));          
+                SpawnEmergencyVehicle(new Model("Police"), 6, 1581098148, 20.0f);
+                SpawnEmergencyVehicle(new Model(1171614426), 20, -1286380898, 30.0f);          
             });
         }
 
-        public static void SpawnEmergencyVehicle(Model carModel, Model pedModel)
+        public static void SpawnEmergencyVehicle(Model carModel, int pedType, int pedModel, float metresBehind)
         {
             if (!Game.LocalPlayer.Character.IsInAnyVehicle(false))
                 return;
             
             Vehicle playerVehicle = Game.LocalPlayer.Character.CurrentVehicle;
             Vector3 backwardVector = Vector3.Negate(playerVehicle.ForwardVector);
-            Vector3 behindVehicle = Vector3.Multiply(backwardVector, 20.0f);
+            Vector3 behindVehicle = Vector3.Multiply(backwardVector, metresBehind);
             Vector3 spawnPosition = Vector3.Add(playerVehicle.RearPosition, behindVehicle);
 
-            Vehicle policeCar = new Vehicle(carModel, spawnPosition, playerVehicle.Heading);
-            Rage.Native.NativeFunction.Natives.SET_VEHICLE_FORWARD_SPEED(policeCar, playerVehicle.Speed);
-            policeCar.IsSirenOn = true;
-            Ped ped = new Ped(pedModel, policeCar.Position, policeCar.Heading);
-            ped.WarpIntoVehicle(policeCar, -1);
-            
-            policeCar.TopSpeed = 200.0f;
+            Vehicle emergencyVehicle = new Vehicle(carModel, spawnPosition, playerVehicle.Heading);
+            Rage.Native.NativeFunction.Natives.SET_VEHICLE_FORWARD_SPEED(emergencyVehicle, playerVehicle.Speed);
+            emergencyVehicle.IsSirenOn = true;
+
+            Ped ped = Rage.Native.NativeFunction.Natives.CREATE_PED_INSIDE_VEHICLE<Ped>(emergencyVehicle, 20, -1286380898, -1, 0, 1);
+                        
+            emergencyVehicle.TopSpeed = 200.0f;
             TaskSequence taskSequence = new TaskSequence(ped);            
-            taskSequence.Tasks.DriveToPosition(policeCar, World.GetNextPositionOnStreet(policeCar.GetOffsetPositionFront(1000.0f)), 200.0f, VehicleDrivingFlags.Emergency, 10.0f);
+            taskSequence.Tasks.DriveToPosition(emergencyVehicle, World.GetNextPositionOnStreet(emergencyVehicle.GetOffsetPositionFront(1000.0f)), 200.0f, VehicleDrivingFlags.Emergency, 10.0f);
             taskSequence.Execute();        
         }
 
