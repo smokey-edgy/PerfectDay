@@ -45,6 +45,21 @@ namespace PerfectDay
             });
         }
 
+
+        [Rage.Attributes.ConsoleCommand(Description = "Create a zombie waiting to happen", Name = "Zombie")]
+        public static void spawnZombieWaitingToHappen()
+        {
+            GameFiber.StartNew(() =>
+            {
+                Ped ped = new Ped(Game.LocalPlayer.Character.GetOffsetPositionFront(10.0f));
+                Rage.Native.NativeFunction.Natives.SET_PED_TO_RAGDOLL(ped, 5000, 5000, 0, 1, 1, 0);
+                Rage.Native.NativeFunction.Natives.APPLY_PED_DAMAGE_PACK(ped, "Fall", 100, 100);
+                ped.BlockPermanentEvents = true;
+                ped.Tasks.ClearImmediately();                
+                ped.Health = 4;                
+            });
+        }
+
         public static void SpawnEmergencyVehicle(Model carModel, int pedType, int pedModel, float metresBehind)
         {
             if (!Game.LocalPlayer.Character.IsInAnyVehicle(false))
