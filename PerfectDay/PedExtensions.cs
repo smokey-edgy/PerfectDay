@@ -51,4 +51,51 @@ namespace Extensions
             });
         }
     }
+
+    public static class PedExtentions
+    {
+        public static void LeaveAmbulanceAndPerformFirstAidOn(this Ped ped, Ped otherPed, Vehicle emergencyVehicle)
+        {
+            Vector3 targetPosition = otherPed.Position;
+            ped.BlockPermanentEvents = true;
+            ped.Tasks.Clear();            
+            ped.Tasks.LeaveVehicle(emergencyVehicle, LeaveVehicleFlags.None);
+            ped.Tasks.FollowNavigationMeshToPosition(targetPosition.Around(1.0f), 0.0f, 5.0f).WaitForCompletion();
+            var targetVector = ped.GetPositionOffset(targetPosition).ToNormalized();
+
+            ped.Heading = (float)((Math.Atan2(targetVector.Y, targetVector.X) * 180) / Math.PI);
+
+            AnimationSet crouchDown = new AnimationSet("move_ped_crouched");
+            crouchDown.LoadAndWait();
+            ped.MovementAnimationSet = crouchDown;
+        }
+
+        public static void PreventAnyMovement(this Ped ped)
+        {
+            GameFiber.StartNew(() =>
+            {
+                while (ped && ped.IsValid())
+                {
+                    ped.CollisionIgnoredEntity = Game.LocalPlayer.Character;
+                    ped.Tasks.ClearImmediately();                                        
+                    GameFiber.Yield();
+                }
+            });
+            
+        }
+
+        public static void DisableTalking(this Ped ped)
+        {
+            GameFiber.StartNew(() =>
+            {
+                while (ped && ped.IsValid())
+                {
+                    if (Rage.Native.NativeFunction.Natives.IS_AMBIENT_SPEECH_PLAYING<bool>(ped))
+                        Rage.Native.NativeFunction.Natives.STOP_CURRENT_PLAYING_AMBIENT_SPEECH(ped);
+
+                    GameFiber.Yield();
+                }
+            });
+        }
+    }
 }

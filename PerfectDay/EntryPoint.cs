@@ -46,18 +46,73 @@ namespace PerfectDay
         }
 
 
-        [Rage.Attributes.ConsoleCommand(Description = "Create a zombie waiting to happen", Name = "Zombie")]
-        public static void spawnZombieWaitingToHappen()
+
+        
+        public static void spawnZombieEmergencyIncident2()
         {
-            GameFiber.StartNew(() =>
+            
+           GameFiber.StartNew(() =>
+           {
+               Vector3 zombiePosition = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.GetOffsetPositionFront(10.0f));
+               Ped zombie = spawnZombieWaitingToHappen(zombiePosition);
+
+               Vector3 spawnPosition = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.GetOffsetPositionFront(50.0f));
+               Vector3 targetPosition = zombiePosition;
+
+               Vehicle emergencyVehicle = new Vehicle(new Model(1171614426), spawnPosition);               
+               //emergencyVehicle.IsSirenOn = true;
+
+               Ped ped = Rage.Native.NativeFunction.Natives.CREATE_PED_INSIDE_VEHICLE<Ped>(emergencyVehicle, 20, -1286380898, -1, 0, 1);
+               Ped partnerPed = Rage.Native.NativeFunction.Natives.CREATE_PED_INSIDE_VEHICLE<Ped>(emergencyVehicle, 20, -1286380898, 0, 0, 1);
+               GameFiber.StartNew(() => ped.LeaveAmbulanceAndPerformFirstAidOn(zombie, emergencyVehicle));
+               GameFiber.StartNew(() => partnerPed.LeaveAmbulanceAndPerformFirstAidOn(zombie, emergencyVehicle));
+           });
+        }
+
+        
+        public static Ped spawnZombieWaitingToHappen(Vector3 spawnPosition)
+        {
+            float z;
+            if (Rage.Native.NativeFunction.Natives.GET_GROUND_Z_FOR_3D_COORD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out z, false))
             {
-                Ped ped = new Ped(Game.LocalPlayer.Character.GetOffsetPositionFront(10.0f));
-                Rage.Native.NativeFunction.Natives.SET_PED_TO_RAGDOLL(ped, 5000, 5000, 0, 1, 1, 0);
-                Rage.Native.NativeFunction.Natives.APPLY_PED_DAMAGE_PACK(ped, "Fall", 100, 100);
-                ped.BlockPermanentEvents = true;
-                ped.Tasks.ClearImmediately();                
-                ped.Health = 4;                
-            });
+                spawnPosition.Z = z;
+            }
+            Ped ped = new Ped(spawnPosition);
+            ped.BlockPermanentEvents = true;
+            ped.Tasks.ClearImmediately();
+            ped.DisableTalking();
+            AnimationDictionary animationDictionary = new AnimationDictionary("amb@world_human_bum_slumped@male@laying_on_left_side@base");
+            ped.Tasks.PlayAnimation(animationDictionary, "base", 1.0f, AnimationFlags.StayInEndFrame);            
+            return ped;
+        }
+
+        [Rage.Attributes.ConsoleCommand(Description = "Create a zombie emergency incident", Name = "Zombie")]
+        public static void spawnZombieEmergencyIncident()
+        {
+            if (!Game.LocalPlayer.Character.IsInAnyVehicle(false))
+                return;
+
+            Vector3 zombiePosition = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.GetOffsetPositionFront(1000.0f));
+            Ped zombie = spawnZombieWaitingToHappen(zombiePosition);
+
+            Model carModel = new Model(1171614426);
+            Vehicle playerVehicle = Game.LocalPlayer.Character.CurrentVehicle;
+            Vector3 backwardVector = Vector3.Negate(playerVehicle.ForwardVector);
+            Vector3 behindVehicle = Vector3.Multiply(backwardVector, 30);
+            Vector3 spawnPosition = Vector3.Add(playerVehicle.RearPosition, behindVehicle);
+
+            Vehicle emergencyVehicle = new Vehicle(carModel, spawnPosition, playerVehicle.Heading);
+            Rage.Native.NativeFunction.Natives.SET_VEHICLE_FORWARD_SPEED(emergencyVehicle, playerVehicle.Speed);
+            emergencyVehicle.IsSirenOn = true;
+
+            Ped ped = Rage.Native.NativeFunction.Natives.CREATE_PED_INSIDE_VEHICLE<Ped>(emergencyVehicle, 20, -1286380898, -1, 0, 1);
+            Ped partnerPed = Rage.Native.NativeFunction.Natives.CREATE_PED_INSIDE_VEHICLE<Ped>(emergencyVehicle, 20, -1286380898, 0, 0, 1);
+            
+            ped.Tasks.DriveToPosition(emergencyVehicle, zombiePosition, emergencyVehicle.TopSpeed, VehicleDrivingFlags.Emergency, 10.0f).WaitForCompletion();            
+
+            GameFiber.StartNew(() => ped.LeaveAmbulanceAndPerformFirstAidOn(zombie, emergencyVehicle));
+            GameFiber.StartNew(() => partnerPed.LeaveAmbulanceAndPerformFirstAidOn(zombie, emergencyVehicle));
+            reanimate(zombie, 30000);
         }
 
         public static void SpawnEmergencyVehicle(Model carModel, int pedType, int pedModel, float metresBehind)
@@ -100,9 +155,13 @@ namespace PerfectDay
                             ped.Tasks.Clear();
                             TaskSequence taskSequence = new TaskSequence(ped);
                             taskSequence.Tasks.LeaveVehicle(vehicle, LeaveVehicleFlags.LeaveDoorOpen);
-                            taskSequence.Tasks.ReactAndFlee(Game.LocalPlayer.Character);
+                            
+                            //taskSequence.Tasks.ReactAndFlee(Game.LocalPlayer.Character);
                             taskSequence.Execute();
-                            Rage.Native.NativeFunction.Natives.ADD_SHOCKING_EVENT_FOR_ENTITY<uint>(86, vehicle, 0);
+                            Ped[] nearbyPeds = ped.GetNearbyPeds(1);
+                            if(nearbyPeds.Length > 0)
+                                Rage.Native.NativeFunction.Natives.TASK_CHAT_TO_PED(ped, nearbyPeds[0], 1, 0, 0, 0, 0, 0);
+                            ped.Tasks.Wander();
                         }
                     }
                 }
@@ -167,10 +226,10 @@ namespace PerfectDay
             return null;
         }
 
-        public static void reanimate(Ped deadPed)
+        public static void reanimate(Ped deadPed, int howLongToReanimate)
         {
             GameFiber.StartNew(() => {                
-                GameFiber.Sleep(5000);                
+                GameFiber.Sleep(howLongToReanimate);                
                 zombify(deadPed);
             });           
         }
@@ -185,8 +244,9 @@ namespace PerfectDay
             }
             
             if(zombie.Exists() && zombie.IsValid())
-                zombie.Tasks.Clear();            
+                zombie.Tasks.Clear();
 
+            zombie.Health = zombie.MaxHealth;
             zombieWalk.LoadAndWait();
             zombie.MovementAnimationSet = zombieWalk;     
 
@@ -195,7 +255,7 @@ namespace PerfectDay
             zombie.BlockPermanentEvents = true;
             zombie.IsCollisionEnabled = true;
 
-            zombie.PlaySound(@"Plugins\zombie.wav");            
+            //zombie.PlaySound(@"Plugins\zombie.wav");            
 
             try
             {
@@ -234,7 +294,7 @@ namespace PerfectDay
                                             Vector3 zombiePosition = zombie.GetOffsetPositionFront(0);
                                             Rage.Native.NativeFunction.Natives.ADD_SHOCKING_EVENT_AT_POSITION<uint>(114, zombiePosition.X, zombiePosition.Y, zombiePosition.Z, 0);                                            
                                             GameFiber.Sleep(2000);                                            
-                                            reanimate(closestHuman);
+                                            reanimate(closestHuman, 5000);
                                             break;
                                         }
                                     }
