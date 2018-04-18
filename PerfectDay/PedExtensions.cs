@@ -60,14 +60,12 @@ namespace Extensions
             ped.BlockPermanentEvents = true;
             ped.Tasks.Clear();            
             ped.Tasks.LeaveVehicle(emergencyVehicle, LeaveVehicleFlags.None);
-            ped.Tasks.FollowNavigationMeshToPosition(targetPosition.Around(1.0f), 0.0f, 5.0f).WaitForCompletion();
-            var targetVector = ped.GetPositionOffset(targetPosition).ToNormalized();
-
-            ped.Heading = (float)((Math.Atan2(targetVector.Y, targetVector.X) * 180) / Math.PI);
-
+            ped.Tasks.FollowNavigationMeshToPosition(targetPosition.Around(3.0f), 0.0f, 5.0f).WaitForCompletion();
+            Rage.Native.NativeFunction.Natives.TASK_TURN_PED_TO_FACE_ENTITY(ped, otherPed, -1);            
             AnimationSet crouchDown = new AnimationSet("move_ped_crouched");
             crouchDown.LoadAndWait();
             ped.MovementAnimationSet = crouchDown;
+            ped.BlockPermanentEvents = false;
         }
 
         public static void PreventAnyMovement(this Ped ped)
