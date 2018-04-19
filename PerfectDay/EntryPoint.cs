@@ -86,6 +86,55 @@ namespace PerfectDay
             return ped;
         }
 
+        [Rage.Attributes.ConsoleCommand(Description = "Get the last object collided with", Name = "Collision")]
+        public static void lastObjectCollide()
+        {
+           //Game.Console.Print("Last object = " + Game.LocalPlayer.Character.)
+        }
+
+
+        public static void fenceSegment(Vector3 spawnPosition)
+        {
+            float z;
+            if (Rage.Native.NativeFunction.Natives.GET_GROUND_Z_FOR_3D_COORD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out z, false))
+            {
+                spawnPosition.Z = z;
+            }
+
+            Rage.Object fence = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_facgate_01"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
+            Rage.Object barrier = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_mp_barrier_01"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
+            Vector3 leftVector = Vector3.Multiply(Vector3.Negate(barrier.RightVector), 5.9f);
+            Vector3 nextBarrierPosition = Vector3.Add(barrier.RightPosition, leftVector);
+            Rage.Object barrier2 = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_mp_barrier_01"), nextBarrierPosition.X, nextBarrierPosition.Y, nextBarrierPosition.Z, true, true, false);
+        
+        }
+
+        [Rage.Attributes.ConsoleCommand(Description = "Create a military blockade", Name = "Military")]
+        public static void spawnMilitaryBlockade()
+        {
+            //Good candidates:
+            /*
+             * prop_mp_barrier_01
+             * prop_facgate_01
+             */
+            Vector3 spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(10.0f);
+
+            fenceSegment(spawnPosition);
+
+        }
+
+        [Rage.Attributes.ConsoleCommand(Description = "Nearby objects and model names", Name = "Models")]
+        public static void nearbyModels()
+        {
+            
+            foreach(Entity entity in World.GetEntities(Game.LocalPlayer.Character.Position, 10.0f, GetEntitiesFlags.ConsiderAllObjects))
+            {
+                Game.Console.Print("entity model = " + entity.Model.Name + " hash = " + entity.Model.Hash);
+            }
+
+
+        }
+
         [Rage.Attributes.ConsoleCommand(Description = "Create a zombie emergency incident", Name = "Zombie")]
         public static void spawnZombieEmergencyIncident()
         {
