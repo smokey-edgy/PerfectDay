@@ -95,6 +95,10 @@ namespace PerfectDay
 
         public static void fenceSegment(Vector3 spawnPosition)
         {
+
+            if (!(Rage.Native.NativeFunction.Natives.IS_POINT_ON_ROAD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, new Vehicle())))
+                return;
+
             float z;
             if (Rage.Native.NativeFunction.Natives.GET_GROUND_Z_FOR_3D_COORD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out z, false))
             {
@@ -117,7 +121,7 @@ namespace PerfectDay
              * prop_mp_barrier_01
              * prop_facgate_01
              */
-            Vector3 spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(10.0f);
+            Vector3 spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(1.0f);
 
             fenceSegment(spawnPosition);
 
