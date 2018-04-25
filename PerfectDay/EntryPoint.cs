@@ -86,31 +86,46 @@ namespace PerfectDay
             return ped;
         }
 
-        [Rage.Attributes.ConsoleCommand(Description = "Get the last object collided with", Name = "Collision")]
-        public static void lastObjectCollide()
+        [Rage.Attributes.ConsoleCommand(Description = "Spawn an object", Name = "SpawnObject")]
+        public static void spawnObject(String objectName)
         {
-           //Game.Console.Print("Last object = " + Game.LocalPlayer.Character.)
-        }
-
-
-        public static void fenceSegment(Vector3 spawnPosition)
-        {
-
-            if (!(Rage.Native.NativeFunction.Natives.IS_POINT_ON_ROAD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, new Vehicle())))
-                return;
-
+            var spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(5.0f);
             float z;
             if (Rage.Native.NativeFunction.Natives.GET_GROUND_Z_FOR_3D_COORD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out z, false))
             {
                 spawnPosition.Z = z;
             }
 
-            Rage.Object fence = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_facgate_01"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
-            Rage.Object barrier = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_mp_barrier_01"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
-            Vector3 leftVector = Vector3.Multiply(Vector3.Negate(barrier.RightVector), 5.9f);
-            Vector3 nextBarrierPosition = Vector3.Add(barrier.RightPosition, leftVector);
-            Rage.Object barrier2 = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_mp_barrier_01"), nextBarrierPosition.X, nextBarrierPosition.Y, nextBarrierPosition.Z, true, true, false);
-        
+            Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey(objectName), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
+            
+        }
+
+
+        public static void militaryFence(Vector3 spawnPosition, float heading)            
+        {
+            for (int i = 0; i < 10; i++)
+            {               
+                
+                //if (!(Rage.Native.NativeFunction.Natives.IS_POINT_ON_ROAD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, new Vehicle())))
+                //    return;
+
+                float z;
+                if (Rage.Native.NativeFunction.Natives.GET_GROUND_Z_FOR_3D_COORD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out z, false))
+                {
+                    spawnPosition.Z = z;
+                }
+
+                Rage.Object fence = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_fnclink_03h"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);                
+                fence.Heading = heading;
+                Rage.Object barrier = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_mp_barrier_01"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
+                barrier.Heading = heading;
+                Vector3 leftVector = Vector3.Multiply(Vector3.Negate(barrier.RightVector), 5.9f);
+                Vector3 nextBarrierPosition = Vector3.Add(barrier.RightPosition, leftVector);
+                Rage.Object barrier2 = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_mp_barrier_01"), nextBarrierPosition.X, nextBarrierPosition.Y, nextBarrierPosition.Z, true, true, false);
+                barrier2.Heading = heading;
+                leftVector = Vector3.Multiply(Vector3.Negate(fence.RightVector), 10.0f);
+                spawnPosition = Vector3.Add(fence.RightPosition, leftVector);                
+            }        
         }
 
         [Rage.Attributes.ConsoleCommand(Description = "Create a military blockade", Name = "Military")]
@@ -121,9 +136,13 @@ namespace PerfectDay
              * prop_mp_barrier_01
              * prop_facgate_01
              */
-            Vector3 spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(1.0f);
+            Vector3 spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(20.0f);
 
-            fenceSegment(spawnPosition);
+            Vector3 closestVehicleNodeCoords;
+            float roadHeading;
+            Rage.Native.NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out closestVehicleNodeCoords, out roadHeading, 1, 3, 0);                       
+
+            militaryFence(spawnPosition, roadHeading);
 
         }
 
