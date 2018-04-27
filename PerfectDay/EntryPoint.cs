@@ -100,15 +100,100 @@ namespace PerfectDay
             
         }
 
-
-        public static void militaryFence(Vector3 spawnPosition, float heading)            
+        public static bool isPointOnRoad(Vector3 position)
         {
-            for (int i = 0; i < 10; i++)
-            {               
-                
-                //if (!(Rage.Native.NativeFunction.Natives.IS_POINT_ON_ROAD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, new Vehicle())))
-                //    return;
+            return Rage.Native.NativeFunction.Natives.IS_POINT_ON_ROAD<bool>(position.X, position.Y, position.Z, new Vehicle());           
+        }
 
+        public static Tuple<Vector3, Vector3> roadEdgesFrom(Vector3 position, Vector3 rightVector)
+        {
+            if (!isPointOnRoad(position))
+                return null;
+
+            Vector3 leftVector = Vector3.Negate(rightVector);
+
+            Vector3 edge1 = position;
+
+            while(isPointOnRoad(edge1))
+            {
+                edge1 = Vector3.Add(edge1, Vector3.Multiply(leftVector, 1.0f));                
+            }
+
+            Vector3 edge2 = position;
+
+            while (isPointOnRoad(edge2))
+            {
+                edge2 = Vector3.Add(edge2, Vector3.Multiply(rightVector, 1.0f));
+            }
+            Game.Console.Print("Edge 1 = " + edge1);
+            Game.Console.Print("Edge 2 = " + edge2);
+            return new Tuple<Vector3, Vector3>(edge1, edge2);            
+        }
+
+        public static Rage.Object militaryFenceSegment(Vector3 spawnPosition, float heading)
+        {
+            float z;
+            if (Rage.Native.NativeFunction.Natives.GET_GROUND_Z_FOR_3D_COORD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out z, false))
+            {
+                spawnPosition.Z = z;
+            }
+
+            Rage.Object fence = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_fnclink_03h"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
+            
+            fence.Heading = heading;
+            return fence;                             
+        }
+
+        public static void militaryFence(Vector3 spawnPosition, float heading)
+        {
+            Rage.Object initialSegment = militaryFenceSegment(spawnPosition, heading);
+
+            Vector3 nextSegmentPosition = initialSegment.RightPosition;
+
+            for(int i = 0; i<10; i++)
+            {
+                
+                Rage.Object segment = militaryFenceSegment(nextSegmentPosition, heading);
+                HitResult hitResult = World.TraceLine(nextSegmentPosition, segment.RightPosition, TraceFlags.IntersectWorld);
+                if (hitResult.Hit)
+                    break;
+                nextSegmentPosition = segment.RightPosition;                
+            }
+
+            nextSegmentPosition = initialSegment.LeftPosition;
+
+            for (int i = 0; i <10; i++)
+            {
+                
+                Rage.Object segment = militaryFenceSegment(nextSegmentPosition, heading);
+                
+                Vector3 leftVector = Vector3.Negate(segment.RightVector);
+                nextSegmentPosition = Vector3.Add(segment.LeftPosition, Vector3.Multiply(leftVector, segment.Width));
+                HitResult hitResult = World.TraceLine(segment.Position, nextSegmentPosition, TraceFlags.IntersectWorld);
+                if (hitResult.Hit)
+                    break;
+            }
+
+            //Rage.Object segment = militaryFenceSegment(initialSegment.RightPosition, heading);
+            //segment = militaryFenceSegment(segment.RightPosition, heading);
+            //segment = militaryFenceSegment(segment.RightPosition, heading);
+            //segment = militaryFenceSegment(initialSegment.LeftPosition, heading);
+            //segment = militaryFenceSegment(segment.LeftPosition, heading);
+            //segment = militaryFenceSegment(segment.LeftPosition, heading);
+        }
+
+        public static void militaryFence2(Vector3 spawnPosition, float heading)            
+        {
+            //Rage.Object fence2 = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_fnclink_03h"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
+            //fence2.Heading = heading;
+            //Tuple<Vector3, Vector3> edges = roadEdgesFrom(spawnPosition, Game.LocalPlayer.Character.RightVector);
+            //Vector3 edge1 = edges.Item1;
+            //Vector3 edge2 = edges.Item2;
+            //Rage.Native.NativeFunction.Natives.DRAW_LINE(edge1.X, edge1.Y, edge1.Z, edge2.X, edge2.Y, edge2.Z, 255, 0, 0, 255);
+            //return;
+            for (int i = 0; i < 10; i++)
+            {              
+                                
                 float z;
                 if (Rage.Native.NativeFunction.Natives.GET_GROUND_Z_FOR_3D_COORD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out z, false))
                 {
@@ -123,9 +208,13 @@ namespace PerfectDay
                 Vector3 nextBarrierPosition = Vector3.Add(barrier.RightPosition, leftVector);
                 Rage.Object barrier2 = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_mp_barrier_01"), nextBarrierPosition.X, nextBarrierPosition.Y, nextBarrierPosition.Z, true, true, false);
                 barrier2.Heading = heading;
-                leftVector = Vector3.Multiply(Vector3.Negate(fence.RightVector), 10.0f);
-                spawnPosition = Vector3.Add(fence.RightPosition, leftVector);                
-            }        
+                leftVector = Vector3.Multiply(Vector3.Negate(fence.RightVector), 10.0f);                
+
+                if (!(Rage.Native.NativeFunction.Natives.IS_POINT_ON_ROAD<bool>(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, new Vehicle())))
+                    return;
+
+                spawnPosition = Vector3.Add(fence.RightPosition, leftVector);
+            }
         }
 
         [Rage.Attributes.ConsoleCommand(Description = "Create a military blockade", Name = "Military")]
