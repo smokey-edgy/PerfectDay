@@ -104,7 +104,7 @@ namespace PerfectDay
         {
             return Rage.Native.NativeFunction.Natives.IS_POINT_ON_ROAD<bool>(position.X, position.Y, position.Z, new Vehicle());           
         }
-
+        
         public static Tuple<Vector3, Vector3> roadEdgesFrom(Vector3 position, Vector3 rightVector)
         {
             if (!isPointOnRoad(position))
@@ -138,8 +138,9 @@ namespace PerfectDay
                 spawnPosition.Z = z;
             }
 
-            Rage.Object fence = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_fnclink_03h"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
-            
+            Rage.Object fence = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_fnclink_03h"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);            
+            Rage.Object barrier = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_mp_barrier_01"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
+            barrier.Heading = heading;
             fence.Heading = heading;
             return fence;                             
         }
@@ -150,36 +151,44 @@ namespace PerfectDay
 
             Vector3 nextSegmentPosition = initialSegment.RightPosition;
 
-            for(int i = 0; i<10; i++)
+            bool justOffTheRoad = false;
+            int segmentTick = 1;
+
+            while(segmentTick != 0)
             {
-                
+                if (!justOffTheRoad)
+                {
+                    if (!isPointOnRoad(nextSegmentPosition))
+                    {
+                       justOffTheRoad = true;
+                    }
+                } else {
+                    segmentTick--;
+                }
                 Rage.Object segment = militaryFenceSegment(nextSegmentPosition, heading);
-                HitResult hitResult = World.TraceLine(nextSegmentPosition, segment.RightPosition, TraceFlags.IntersectWorld);
-                if (hitResult.Hit)
-                    break;
-                nextSegmentPosition = segment.RightPosition;                
+                nextSegmentPosition = segment.RightPosition;
             }
 
+            justOffTheRoad = false;
+            segmentTick = 1;
             nextSegmentPosition = initialSegment.LeftPosition;
 
-            for (int i = 0; i <10; i++)
+            while (segmentTick != 0)
             {
-                
+                if (!justOffTheRoad)
+                {
+                    if (!isPointOnRoad(nextSegmentPosition))
+                    {                        
+                        justOffTheRoad = true;
+                    }
+                } else
+                {
+                    segmentTick--;
+                }
                 Rage.Object segment = militaryFenceSegment(nextSegmentPosition, heading);
-                
                 Vector3 leftVector = Vector3.Negate(segment.RightVector);
                 nextSegmentPosition = Vector3.Add(segment.LeftPosition, Vector3.Multiply(leftVector, segment.Width));
-                HitResult hitResult = World.TraceLine(segment.Position, nextSegmentPosition, TraceFlags.IntersectWorld);
-                if (hitResult.Hit)
-                    break;
             }
-
-            //Rage.Object segment = militaryFenceSegment(initialSegment.RightPosition, heading);
-            //segment = militaryFenceSegment(segment.RightPosition, heading);
-            //segment = militaryFenceSegment(segment.RightPosition, heading);
-            //segment = militaryFenceSegment(initialSegment.LeftPosition, heading);
-            //segment = militaryFenceSegment(segment.LeftPosition, heading);
-            //segment = militaryFenceSegment(segment.LeftPosition, heading);
         }
 
         public static void militaryFence2(Vector3 spawnPosition, float heading)            
