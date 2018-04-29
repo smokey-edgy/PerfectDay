@@ -226,6 +226,28 @@ namespace PerfectDay
             }
         }
 
+        [Rage.Attributes.ConsoleCommand(Description = "Create a military presence", Name = "Army")]
+        public static void spawnArmy()
+        {
+            Vector3 spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(10.0f);
+
+            RelationshipGroup MilitaryGroup = new RelationshipGroup("MILITARY");
+            Ped[] marines = new Ped[12];
+            for(int i = 0; i<12; i++)
+            {
+                marines[i] = new Ped(new Model("S_M_Y_Marine_03"), spawnPosition.Around2D(20.0f), 0.0f);
+                marines[i].RelationshipGroup = MilitaryGroup;
+                marines[i].StaysInGroups = false;
+                marines[i].Tasks.ClearImmediately();
+                marines[i].Tasks.StandStill(-1);
+                marines[i].Inventory.GiveFlashlight();                
+                marines[i].Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_ASSAULTRIFLE"), 100, true);                                
+            }
+            for(int i = 0; i<12; i+=2)
+                Rage.Native.NativeFunction.Natives.TASK_CHAT_TO_PED(marines[i], marines[i+1], 1, 0, 0, 0, 0, 0);
+        }
+
+
         [Rage.Attributes.ConsoleCommand(Description = "Create a military blockade", Name = "Military")]
         public static void spawnMilitaryBlockade()
         {
