@@ -145,7 +145,7 @@ namespace PerfectDay
             return fence;                             
         }
 
-        public static void militaryFence(Vector3 spawnPosition, float heading)
+        public static Rage.Object militaryFence(Vector3 spawnPosition, float heading)
         {
             Rage.Object initialSegment = militaryFenceSegment(spawnPosition, heading);
 
@@ -189,6 +189,8 @@ namespace PerfectDay
                 Vector3 leftVector = Vector3.Negate(segment.RightVector);
                 nextSegmentPosition = Vector3.Add(segment.LeftPosition, Vector3.Multiply(leftVector, segment.Width));
             }
+
+            return initialSegment;
         }
 
         public static void militaryFence2(Vector3 spawnPosition, float heading)            
@@ -227,24 +229,102 @@ namespace PerfectDay
         }
 
         [Rage.Attributes.ConsoleCommand(Description = "Create a military presence", Name = "Army")]
-        public static void spawnArmy()
-        {
-            Vector3 spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(10.0f);
-
+        public static void spawnMilitaryBlockadeSquadInFrontOf(Rage.Object fence, float heading)
+        {                       
             RelationshipGroup MilitaryGroup = new RelationshipGroup("MILITARY");
-            Ped[] marines = new Ped[12];
-            for(int i = 0; i<12; i++)
+            Vector3 spawnPosition = fence.GetOffsetPositionFront(1.0f);
+
+            Ped[] marines = new Ped[8];
+
+            for (int i = 0; i < 4; i++)
             {
-                marines[i] = new Ped(new Model("S_M_Y_Marine_03"), spawnPosition.Around2D(20.0f), 0.0f);
+                Vector3 marinePosition = spawnPosition;
+                spawnPosition = Vector3.Add(marinePosition, Vector3.Multiply(Vector3.Negate(fence.RightVector), 3.0f));
+
+                float marineHeading = MathHelper.ConvertDirectionToHeading(fence.ForwardVector);
+
+                marines[i] = new Ped(new Model("S_M_Y_Marine_03"), marinePosition, marineHeading);
+
                 marines[i].RelationshipGroup = MilitaryGroup;
                 marines[i].StaysInGroups = false;
+                marines[i].BlockPermanentEvents = true;
                 marines[i].Tasks.ClearImmediately();
-                marines[i].Tasks.StandStill(-1);
-                marines[i].Inventory.GiveFlashlight();                
-                marines[i].Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_ASSAULTRIFLE"), 100, true);                                
+                marines[i].Inventory.GiveFlashlight();
+                marines[i].Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_ASSAULTRIFLE"), 100, true);
+                
+                //Rage.Native.NativeFunction.Natives.TASK_TURN_PED_TO_FACE_ENTITY(marines[i], Game.LocalPlayer.Character, -1);
+                Rage.Native.NativeFunction.Natives.TASK_STAND_GUARD(marines[i], marines[i].Position.X, marines[i].Position.Y, marines[i].Position.Z, marineHeading, "WORLD_HUMAN_GUARD_STAND_ARMY");
             }
-            for(int i = 0; i<12; i+=2)
-                Rage.Native.NativeFunction.Natives.TASK_CHAT_TO_PED(marines[i], marines[i+1], 1, 0, 0, 0, 0, 0);
+
+            spawnPosition = fence.GetOffsetPositionFront(1.0f);
+            spawnPosition = Vector3.Add(spawnPosition, Vector3.Multiply(fence.RightVector, 3.0f));
+
+            for (int i = 4; i < 8; i++)
+            {
+                Vector3 marinePosition = spawnPosition;
+                spawnPosition = Vector3.Add(marinePosition, Vector3.Multiply(fence.RightVector, 3.0f));
+
+                float marineHeading = MathHelper.ConvertDirectionToHeading(fence.ForwardVector);
+
+                marines[i] = new Ped(new Model("S_M_Y_Marine_03"), marinePosition, marineHeading);
+
+                marines[i].RelationshipGroup = MilitaryGroup;
+                marines[i].StaysInGroups = false;
+                marines[i].BlockPermanentEvents = true;
+                marines[i].Tasks.ClearImmediately();
+                marines[i].Inventory.GiveFlashlight();
+                marines[i].Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_ASSAULTRIFLE"), 100, true);
+
+                //Rage.Native.NativeFunction.Natives.TASK_TURN_PED_TO_FACE_ENTITY(marines[i], Game.LocalPlayer.Character, -1);
+                Rage.Native.NativeFunction.Natives.TASK_STAND_GUARD(marines[i], marines[i].Position.X, marines[i].Position.Y, marines[i].Position.Z, marineHeading, "WORLD_HUMAN_GUARD_STAND_ARMY");
+            }
+
+
+
+            //for (int i = 4; i<8; i++)
+            //{
+            //    Vector3 marinePosition = spawnPosition;
+            //    spawnPosition = Vector3.Add(marinePosition, Vector3.Multiply(fence.RightVector, 3.0f));
+
+            //    marines[i] = new Ped(new Model("S_M_Y_Marine_03"), marinePosition, 0.0f);                
+
+            //    marines[i].RelationshipGroup = MilitaryGroup;
+            //    marines[i].StaysInGroups = false;
+            //    marines[i].BlockPermanentEvents = true;
+            //    marines[i].Tasks.ClearImmediately();
+            //    marines[i].Inventory.GiveFlashlight();
+            //    marines[i].Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_ASSAULTRIFLE"), 100, true);
+
+            //    //Rage.Native.NativeFunction.Natives.TASK_TURN_PED_TO_FACE_ENTITY(marines[i], Game.LocalPlayer.Character, -1);
+            //    Rage.Native.NativeFunction.Natives.TASK_STAND_GUARD(marines[i], marines[i].Position.X, marines[i].Position.Y, marines[i].Position.Z, 0, "WORLD_HUMAN_GUARD_STAND_ARMY");
+            //    //Rage.Native.NativeFunction.Natives.TASK_STAND_GUARD(marines[i], marines[i].Position.X, marines[i].Position.Y, marines[i].Position.Z, 0, "CODE_HUMAN_POLICE_CROWD_CONTROL");
+            //    Ped marine = marines[i];
+
+            //    //GameFiber.StartNew(() => {
+            //    //    while(true)
+            //    //    {
+            //    //        if (!marine.IsValid())
+            //    //            break;
+
+            //    //        Ped[] nearbyPeds = marine.GetNearbyPeds(1);
+            //    //        if(nearbyPeds.Length > 0)
+            //    //        {
+            //    //            Ped nearestPed = nearbyPeds[0];
+            //    //            if(nearestPed.DistanceTo(marine) <= 10.0f)
+            //    //            {
+            //    //                marine.Tasks.AimWeaponAt(nearestPed, 10000);
+            //    //                //s_m_y_genericmarine_01_white_mini_01.awc DRAW_GUN_01 0x17F730E9 0x171F6F39 0x16F15E2C
+            //    //                marine.PlayAmbientSpeech("S_M_Y_GENERICMARINE_01_WHITE_MINI_01", "DRAW_GUN", 1, SpeechModifier.ForceShoutedCritical);
+            //    //                //marine.PlayAmbientSpeech("A_F_M_SOUCENT_01_BLACK_FULL_01", "CHALLENGE_THREATEN", 1, SpeechModifier.ForceShoutedCritical);
+            //    //            }
+            //    //        }
+            //    //        GameFiber.Yield();
+            //    //    }
+            //    //});
+
+            //}
+            //for(int i = 0; i<12; i+=2)
+            //    Rage.Native.NativeFunction.Natives.TASK_CHAT_TO_PED(marines[i], marines[i+1], 1, 0, 0, 0, 0, 0);
         }
 
 
@@ -260,9 +340,10 @@ namespace PerfectDay
 
             Vector3 closestVehicleNodeCoords;
             float roadHeading;
-            Rage.Native.NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out closestVehicleNodeCoords, out roadHeading, 1, 3, 0);                       
+            Rage.Native.NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out closestVehicleNodeCoords, out roadHeading, 1, 3, 0);
 
-            militaryFence(spawnPosition, roadHeading);
+            Rage.Object fence = militaryFence(spawnPosition, roadHeading);
+            spawnMilitaryBlockadeSquadInFrontOf(fence, roadHeading);
 
         }
 
@@ -365,9 +446,13 @@ namespace PerfectDay
         {           
             while (true)
             {
-                Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
-                Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
-                Rage.Native.NativeFunction.Natives.SET_FAR_DRAW_VEHICLES(1);
+                //Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
+                //Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
+                //Rage.Native.NativeFunction.Natives.SET_FAR_DRAW_VEHICLES(1);
+                //Rage.Native.NativeFunction.Natives.POPULATE_NOW();
+                Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(0.0f);
+                Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(0.0f);
+                Rage.Native.NativeFunction.Natives.SET_FAR_DRAW_VEHICLES(0);
                 Rage.Native.NativeFunction.Natives.POPULATE_NOW();
                 GameFiber.Yield();
             }
