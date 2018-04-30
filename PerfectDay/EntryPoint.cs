@@ -15,6 +15,7 @@ namespace PerfectDay
     public class EntryPoint
     {
         private static RelationshipGroup ZombiesGroup = new RelationshipGroup("ZOMBIES");
+        private static RelationshipGroup MilitaryGroup = new RelationshipGroup("MILITARY");
         private static AnimationSet zombieWalk = new AnimationSet("move_m@drunk@verydrunk");
         private static AnimationSet zombieEating = new AnimationSet("move_ped_crouched");
         
@@ -228,21 +229,40 @@ namespace PerfectDay
             }
         }
 
+        public static Ped spawnEquippedMarine(Vector3 marinePosition, float marineHeading)
+        {
+            Ped marine = new Ped(new Model("S_M_Y_Marine_03"), marinePosition, marineHeading);
+
+            marine.RelationshipGroup = MilitaryGroup;
+            marine.StaysInGroups = false;
+            marine.BlockPermanentEvents = true;
+            marine.Tasks.ClearImmediately();
+            marine.Inventory.GiveFlashlight();
+            marine.Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_ASSAULTRIFLE"), 100, true);
+
+            return marine;
+        }
+
         [Rage.Attributes.ConsoleCommand(Description = "Create a military presence", Name = "Army")]
         public static void spawnMilitaryBlockadeSquadInFrontOf(Rage.Object fence, float heading)
-        {                       
-            RelationshipGroup MilitaryGroup = new RelationshipGroup("MILITARY");
+        {                     
+            Vector3 playerPosition = Game.LocalPlayer.Character.Position;
             Vector3 spawnPosition = fence.GetOffsetPositionFront(1.0f);
+            float marineHeading = MathHelper.ConvertDirectionToHeading(fence.ForwardVector);
 
+            if (playerPosition.DistanceTo(fence.RearPosition) < playerPosition.DistanceTo(fence.FrontPosition))
+            {
+                spawnPosition = fence.GetOffsetPositionFront(-1.0f);
+                marineHeading = MathHelper.ConvertDirectionToHeading(Vector3.Negate(fence.ForwardVector));
+            }       
+                        
             Ped[] marines = new Ped[8];
 
             for (int i = 0; i < 4; i++)
             {
                 Vector3 marinePosition = spawnPosition;
                 spawnPosition = Vector3.Add(marinePosition, Vector3.Multiply(Vector3.Negate(fence.RightVector), 3.0f));
-
-                float marineHeading = MathHelper.ConvertDirectionToHeading(fence.ForwardVector);
-
+                               
                 marines[i] = new Ped(new Model("S_M_Y_Marine_03"), marinePosition, marineHeading);
 
                 marines[i].RelationshipGroup = MilitaryGroup;
@@ -257,14 +277,18 @@ namespace PerfectDay
             }
 
             spawnPosition = fence.GetOffsetPositionFront(1.0f);
+            if (playerPosition.DistanceTo(fence.RearPosition) < playerPosition.DistanceTo(fence.FrontPosition))
+            {
+                spawnPosition = fence.GetOffsetPositionFront(-1.0f);
+                marineHeading = MathHelper.ConvertDirectionToHeading(Vector3.Negate(fence.ForwardVector));
+            }
+
             spawnPosition = Vector3.Add(spawnPosition, Vector3.Multiply(fence.RightVector, 3.0f));
 
             for (int i = 4; i < 8; i++)
             {
                 Vector3 marinePosition = spawnPosition;
                 spawnPosition = Vector3.Add(marinePosition, Vector3.Multiply(fence.RightVector, 3.0f));
-
-                float marineHeading = MathHelper.ConvertDirectionToHeading(fence.ForwardVector);
 
                 marines[i] = new Ped(new Model("S_M_Y_Marine_03"), marinePosition, marineHeading);
 
@@ -279,7 +303,24 @@ namespace PerfectDay
                 Rage.Native.NativeFunction.Natives.TASK_STAND_GUARD(marines[i], marines[i].Position.X, marines[i].Position.Y, marines[i].Position.Z, marineHeading, "WORLD_HUMAN_GUARD_STAND_ARMY");
             }
 
+            spawnPosition = fence.GetOffsetPositionFront(6.0f);
+            if (playerPosition.DistanceTo(fence.RearPosition) < playerPosition.DistanceTo(fence.FrontPosition))
+            {
+                spawnPosition = fence.GetOffsetPositionFront(-6.0f);
+            }
 
+            Ped chattingMarine1 = spawnEquippedMarine(spawnPosition.Around2D(0.0f, 3.0f), marineHeading);           
+            Ped chattingMarine2 = spawnEquippedMarine(spawnPosition.Around2D(0.0f, 3.0f), marineHeading);
+            Ped chattingMarine3 = spawnEquippedMarine(spawnPosition.Around2D(0.0f, 3.0f), marineHeading);
+            Ped chattingMarine4 = spawnEquippedMarine(spawnPosition.Around2D(0.0f, 3.0f), marineHeading);
+            Ped wanderingMarine1 = spawnEquippedMarine(spawnPosition.Around2D(0.0f, 3.0f), marineHeading);
+            Ped wanderingMarine2 = spawnEquippedMarine(spawnPosition.Around2D(0.0f, 3.0f), marineHeading);
+
+            Rage.Native.NativeFunction.Natives.TASK_CHAT_TO_PED(chattingMarine1, chattingMarine2, 1, 0, 0, 0, 0, 0);
+            Rage.Native.NativeFunction.Natives.TASK_CHAT_TO_PED(chattingMarine3, chattingMarine4, 1, 0, 0, 0, 0, 0);
+
+            wanderingMarine1.Tasks.Wander();
+            wanderingMarine2.Tasks.Wander();
 
             //for (int i = 4; i<8; i++)
             //{
