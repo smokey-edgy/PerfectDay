@@ -321,7 +321,37 @@ namespace PerfectDay
 
             wanderingMarine1.Tasks.Wander();
             wanderingMarine2.Tasks.Wander();
+            while (true)
+            {
+                if (!chattingMarine4.IsValid())
+                    break;
 
+                Ped[] nearbyPeds = chattingMarine4.GetNearbyPeds(10);
+                Ped nearestPed = null;
+
+                foreach (Ped ped in nearbyPeds)
+                {
+                    if (!ped.RelationshipGroup.Equals(MilitaryGroup))
+                    {
+                        nearestPed = ped;
+                        break;
+                    }
+                }
+
+                if (nearestPed != null)
+                {
+                    if (nearestPed.DistanceTo(fence) <= 5.0f)
+                    {
+                        chattingMarine4.Tasks.GoToOffsetFromEntity(nearestPed, 2.0f, 0.0f, 0.1f).WaitForCompletion();
+                        Rage.Native.NativeFunction.Natives.TASK_TURN_PED_TO_FACE_ENTITY(chattingMarine4, nearestPed, -1);
+                        chattingMarine4.PlayAmbientSpeech("S_M_Y_GENERICMARINE_01_WHITE_MINI_01", "PROVOKE_TRESPASS", 1, SpeechModifier.ForceShoutedCritical);
+                        GameFiber.Sleep(10000);
+                    }
+                }
+            
+                GameFiber.Yield();
+            }
+            
             //for (int i = 4; i<8; i++)
             //{
             //    Vector3 marinePosition = spawnPosition;
