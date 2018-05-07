@@ -51,6 +51,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AmbulanceIncident.cs" />
+    <Compile Include="TrafficJamScenario.cs" />
+    <Compile Include="ZombieScenario.cs" />
+    <Compile Include="MilitaryBlockadeScenario.cs" />
     <Compile Include="PedExtensions.cs" />
     <Compile Include="EntryPoint.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

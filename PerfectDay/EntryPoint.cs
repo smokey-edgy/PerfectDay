@@ -407,15 +407,16 @@ namespace PerfectDay
              * prop_mp_barrier_01
              * prop_facgate_01
              */
-            Vector3 spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(20.0f);
+            //Vector3 spawnPosition = Game.LocalPlayer.Character.GetOffsetPositionFront(20.0f);
 
-            Vector3 closestVehicleNodeCoords;
-            float roadHeading;
-            Rage.Native.NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out closestVehicleNodeCoords, out roadHeading, 1, 3, 0);
+            //Vector3 closestVehicleNodeCoords;
+            //float roadHeading;
+            //Rage.Native.NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPosition.X, spawnPosition.Y, spawnPosition.Z, out closestVehicleNodeCoords, out roadHeading, 1, 3, 0);
 
-            Rage.Object fence = militaryFence(spawnPosition, roadHeading);
-            spawnMilitaryBlockadeSquadInFrontOf(fence, roadHeading);
-
+            //Rage.Object fence = militaryFence(spawnPosition, roadHeading);
+            //spawnMilitaryBlockadeSquadInFrontOf(fence, roadHeading);
+            MilitaryBlockadeScenario blockade = new MilitaryBlockadeScenario(Game.LocalPlayer.Character.GetOffsetPositionFront(20.0f));
+            blockade.Start();
         }
 
         [Rage.Attributes.ConsoleCommand(Description = "Nearby objects and model names", Name = "Models")]
