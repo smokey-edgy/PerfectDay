@@ -37,6 +37,21 @@ namespace PerfectDay
             HaveMarinesShootIfAllWarningsAreIgnored();
         }
 
+        private Ped GetNearestNonMilitaryPed(Ped ped)
+        {
+            Ped[] nearbyPeds = ped.GetNearbyPeds(10);
+
+            foreach (Ped nearbyPed in nearbyPeds)
+            {
+                if (!nearbyPed.RelationshipGroup.Equals(RelationshipGroup.Army))
+                {
+                    return nearbyPed;
+                }
+            }
+
+            return null;
+        }
+
         private void HaveMarinesWarnAnyoneThatComesCloseToTheFence()
         {
             int randomMarine = MathHelper.GetRandomInteger(0, _numberOfChattingMarines - 1);
@@ -44,44 +59,49 @@ namespace PerfectDay
 
             GameFiber.StartNew(() =>
             {
+                uint warnings = 0;
+
                 while (true)
                 {
                     if (!enforcerMarine.IsValid())
                         break;
 
-                    Ped[] nearbyPeds = enforcerMarine.GetNearbyPeds(10);
-                    Ped nearestPed = null;
-
-                    foreach (Ped ped in nearbyPeds)
-                    {
-                        if (!ped.RelationshipGroup.Equals(RelationshipGroup.Army))
-                        {
-                            nearestPed = ped;
-                            break;
-                        }
-                    }
+                    Ped nearestPed = GetNearestNonMilitaryPed(enforcerMarine);
 
                     if (nearestPed != null)
                     {
                         if (nearestPed.DistanceTo(InitialFenceSegment) <= 5.0f)
                         {
                             Vector3 originalPosition = enforcerMarine.Position;
-                            GameFiber.StartNew(() =>
-                            {
-                                while (true)
-                                {
-                                    if (nearestPed.DistanceTo(InitialFenceSegment) > 5.0f)
-                                    {
-                                        enforcerMarine.Tasks.ClearImmediately();
-                                        enforcerMarine.Tasks.GoStraightToPosition(originalPosition, 1.0f, 0.0f, 0.1f, 20000);
-                                        break;
-                                    }
-                                    GameFiber.Yield();
-                                }
-                            });
+
+                            DoNotPursueIfPedWalksAway(enforcerMarine, nearestPed, originalPosition);
+
                             enforcerMarine.Tasks.GoToOffsetFromEntity(nearestPed, 2.0f, 0.0f, 0.1f).WaitForCompletion();
                             Rage.Native.NativeFunction.Natives.TASK_TURN_PED_TO_FACE_ENTITY(enforcerMarine, nearestPed, -1);
                             enforcerMarine.PlayAmbientSpeech(null, "PROVOKE_TRESPASS", 1, SpeechModifier.ForceShoutedCritical);
+                            warnings++;
+                            if (warnings == 2)
+                            {
+                                enforcerMarine.Tasks.AimWeaponAt(nearestPed, 10000);
+                            }
+                            if (warnings == 3)
+                            {
+                                enforcerMarine.Tasks.AimWeaponAt(nearestPed, 10000);
+                                foreach (Ped marine in GuardingMarines)
+                                {
+                                    marine.Tasks.AimWeaponAt(nearestPed, 10000);
+                                }
+
+                            }
+                            if (warnings == 4)
+                            {
+                                enforcerMarine.Tasks.FireWeaponAt(nearestPed, 10000, FiringPattern.SingleShot);
+                                foreach (Ped marine in GuardingMarines)
+                                {
+                                    marine.Tasks.FireWeaponAt(nearestPed, 10000, FiringPattern.SingleShot);
+                                }
+
+                            }
                             GameFiber.Sleep(10000);
                         }
                     }
@@ -90,6 +110,22 @@ namespace PerfectDay
             });
         }
 
+        private void DoNotPursueIfPedWalksAway(Ped militaryPed, Ped nearestPed, Vector3 originalMilitaryPedPosition)
+        {
+            GameFiber.StartNew(() =>
+            {
+                while (true)
+                {
+                    if (nearestPed.DistanceTo(InitialFenceSegment) > 5.0f)
+                    {
+                        militaryPed.Tasks.ClearImmediately();
+                        militaryPed.Tasks.GoStraightToPosition(originalMilitaryPedPosition, 1.0f, 0.0f, 0.1f, 20000);
+                        break;
+                    }
+                    GameFiber.Yield();
+                }
+            });
+        }
         private void HaveMarinesAimTheirWeaponsIfWarningsAreIgnored()
         {
 
