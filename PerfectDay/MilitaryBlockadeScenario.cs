@@ -9,27 +9,84 @@ namespace PerfectDay
 {
     class MilitaryBlockadeScenario
     {
-        private Vector3 position;
-        private float direction;
-        private Rage.Object initialFenceSegment;
+        private static int _numberOfGuardingMarines = 4;
+        private static int _numberOfChattingMarines = 4;
 
+        private Vector3 Position;
+        private float Direction;
+        private float MarinesDirection;
+        private Vector3 MarinesSpawnPosition;
+        private Rage.Object InitialFenceSegment;
+        private Ped[] GuardingMarines = new Ped[_numberOfGuardingMarines];
+        private Ped[] ChattingMarines = new Ped[_numberOfChattingMarines];
+        
         public MilitaryBlockadeScenario(Vector3 blockadePosition)
         {
-            position = blockadePosition;
-            DetermineBlockadeDirection();
+            Position = blockadePosition;
+            DetermineBlockadeDirection();            
         }
         
         public void Start()
         {
-            SpawnMilitaryBlockade();
+            SpawnBlockadeFence();
+            SpawnMarines();
         }
 
-        private void SpawnMilitaryBlockade()
+        private void SpawnMarines()
         {
-            initialFenceSegment = SpawnFenceAt(position);
+            DetermineMarinesDirectionAndSpawnPosition();
+            SpawnMarinesGuardingFence();
+            SpawnChattingMarines();
+        }
+
+        private void SpawnChattingMarines()
+        {
+            Vector3 spawnPosition = InitialFenceSegment.GetOffsetPositionFront(6.0f);
+
+            for (int i = 0; i < _numberOfChattingMarines; i++)
+            {
+                Vector3 marinePosition = spawnPosition.Around2D(0.0f, 3.0f);                
+                Ped marine = EquippedMarine(marinePosition, MarinesDirection);
+                ChattingMarines[i] = marine;
+
+                if (i > 0)
+                    Rage.Native.NativeFunction.Natives.TASK_CHAT_TO_PED(ChattingMarines[i - 1], ChattingMarines[i], 1, 0, 0, 0, 0, 0);                
+            }
+        }
+        private void SpawnMarinesGuardingFence()
+        {
+            Vector3 spawnPosition = MarinesSpawnPosition;
+
+            for (int i = 0; i < _numberOfGuardingMarines; i++)
+            {
+                Vector3 marinePosition = spawnPosition;
+                spawnPosition = Vector3.Add(marinePosition, Vector3.Multiply(Vector3.Negate(InitialFenceSegment.RightVector), 3.0f));                
+                Ped marine = EquippedMarine(marinePosition, MarinesDirection);
+                GuardingMarines[i] = marine;
+                Rage.Native.NativeFunction.Natives.TASK_STAND_GUARD(marine, marine.Position.X, marine.Position.Y, marine.Position.Z, MarinesDirection, "WORLD_HUMAN_GUARD_STAND_ARMY");
+            }
+        }
+
+        public Ped EquippedMarine(Vector3 marinePosition, float marineHeading)
+        {
+            Ped marine = new Ped(new Model("S_M_Y_Marine_03"), marinePosition, marineHeading);
+
+            marine.RelationshipGroup = RelationshipGroup.Army;
+            marine.StaysInGroups = false;
+            marine.BlockPermanentEvents = true;
+            marine.Tasks.ClearImmediately();
+            marine.Inventory.GiveFlashlight();
+            marine.Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_ASSAULTRIFLE"), 100, true);
+
+            return marine;
+        }
+
+        private void SpawnBlockadeFence()
+        {
+            InitialFenceSegment = SpawnFenceAt(Position);
             
-            ExtendFenceToTheEdgeOfTheRoadHeadingRight(initialFenceSegment.RightPosition);
-            ExtendFenceToTheEdgeOfTheRoadHeadingLeft(initialFenceSegment.LeftPosition);
+            ExtendFenceToTheEdgeOfTheRoadHeadingRight(InitialFenceSegment.RightPosition);
+            ExtendFenceToTheEdgeOfTheRoadHeadingLeft(InitialFenceSegment.LeftPosition);
         }
 
         private void ExtendFenceToTheEdgeOfTheRoadHeadingRight(Vector3 position)
@@ -81,7 +138,20 @@ namespace PerfectDay
         private void DetermineBlockadeDirection()
         { 
             Vector3 ignore;            
-            Rage.Native.NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(position.X, position.Y, position.Z, out ignore, out direction, 1, 3, 0);            
+            Rage.Native.NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(Position.X, Position.Y, Position.Z, out ignore, out Direction, 1, 3, 0);            
+        }
+
+        private void DetermineMarinesDirectionAndSpawnPosition()
+        {
+            Vector3 playerPosition = Game.LocalPlayer.Character.Position;
+            MarinesSpawnPosition = InitialFenceSegment.GetOffsetPositionFront(1.0f);
+            MarinesDirection = MathHelper.ConvertDirectionToHeading(InitialFenceSegment.ForwardVector);
+
+            if (playerPosition.DistanceTo(InitialFenceSegment.RearPosition) < playerPosition.DistanceTo(InitialFenceSegment.FrontPosition))
+            {
+                MarinesSpawnPosition = InitialFenceSegment.GetOffsetPositionFront(-1.0f);
+                MarinesDirection = MathHelper.ConvertDirectionToHeading(Vector3.Negate(InitialFenceSegment.ForwardVector));
+            }
         }
 
         private Rage.Object SpawnFenceAt(Vector3 spawnPosition)
@@ -94,8 +164,8 @@ namespace PerfectDay
 
             Rage.Object fence = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_fnclink_03h"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
             Rage.Object barrier = Rage.Native.NativeFunction.Natives.CREATE_OBJECT_NO_OFFSET<Rage.Object>(Game.GetHashKey("prop_mp_barrier_01"), spawnPosition.X, spawnPosition.Y, spawnPosition.Z, true, true, false);
-            barrier.Heading = direction;
-            fence.Heading = direction;
+            barrier.Heading = Direction;
+            fence.Heading = Direction;
 
             return fence;
         }
