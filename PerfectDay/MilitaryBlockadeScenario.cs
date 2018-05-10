@@ -57,6 +57,9 @@ namespace PerfectDay
             int randomMarine = MathHelper.GetRandomInteger(0, _numberOfChattingMarines - 1);
             Ped enforcerMarine = ChattingMarines[randomMarine];
 
+            if (IsNightTime())
+                enforcerMarine.Inventory.Weapons.Remove(new WeaponDescriptor(new WeaponAsset("WEAPON_ASSAULTRIFLE")));            
+
             GameFiber.StartNew(() =>
             {
                 uint warnings = 0;
@@ -76,29 +79,32 @@ namespace PerfectDay
 
                             DoNotPursueIfPedWalksAway(enforcerMarine, nearestPed, originalPosition);
 
-                            enforcerMarine.Tasks.GoToOffsetFromEntity(nearestPed, 2.0f, 0.0f, 0.1f).WaitForCompletion();
+                            enforcerMarine.Tasks.GoToOffsetFromEntity(nearestPed, 3.0f, 0.0f, 0.1f).WaitForCompletion();                            
                             Rage.Native.NativeFunction.Natives.TASK_TURN_PED_TO_FACE_ENTITY(enforcerMarine, nearestPed, -1);
+
+                            if (IsNightTime())
+                                enforcerMarine.Tasks.AimWeaponAt(nearestPed, 10000);
+
                             enforcerMarine.PlayAmbientSpeech(null, "PROVOKE_TRESPASS", 1, SpeechModifier.ForceShoutedCritical);
                             warnings++;
                             if (warnings == 2)
                             {
-                                enforcerMarine.Tasks.AimWeaponAt(nearestPed, 10000);
+                                enforcerMarine.Tasks.GoToWhileAiming(nearestPed, 10.0f, 100.0f);
                             }
                             if (warnings == 3)
                             {
-                                enforcerMarine.Tasks.AimWeaponAt(nearestPed, 10000);
+                                enforcerMarine.Tasks.GoToWhileAiming(nearestPed, 10.0f, 100.0f);                                
                                 foreach (Ped marine in GuardingMarines)
                                 {
-                                    marine.Tasks.AimWeaponAt(nearestPed, 10000);
+                                    marine.Tasks.GoToWhileAiming(nearestPed, 10.0f, 100.0f);                                    
                                 }
-
                             }
-                            if (warnings == 4)
+                            if (warnings >= 4)
                             {
-                                enforcerMarine.Tasks.FireWeaponAt(nearestPed, 10000, FiringPattern.SingleShot);
+                                enforcerMarine.Tasks.FireWeaponAt(nearestPed, -1, FiringPattern.BurstFireRifle);
                                 foreach (Ped marine in GuardingMarines)
                                 {
-                                    marine.Tasks.FireWeaponAt(nearestPed, 10000, FiringPattern.SingleShot);
+                                    marine.Tasks.FireWeaponAt(nearestPed, -1, FiringPattern.BurstFireRifle);
                                 }
 
                             }
@@ -110,6 +116,12 @@ namespace PerfectDay
             });
         }
 
+        private bool IsNightTime()
+        {
+            int hour = World.DateTime.Hour;
+            return hour >= 21 && hour <= 23 && hour >= 0 && hour <= 6;
+        }
+
         private void DoNotPursueIfPedWalksAway(Ped militaryPed, Ped nearestPed, Vector3 originalMilitaryPedPosition)
         {
             GameFiber.StartNew(() =>
@@ -118,7 +130,7 @@ namespace PerfectDay
                 {
                     if (nearestPed.DistanceTo(InitialFenceSegment) > 5.0f)
                     {
-                        militaryPed.Tasks.ClearImmediately();
+                        militaryPed.Tasks.Clear();
                         militaryPed.Tasks.GoStraightToPosition(originalMilitaryPedPosition, 1.0f, 0.0f, 0.1f, 20000);
                         break;
                     }
@@ -194,7 +206,12 @@ namespace PerfectDay
             marine.BlockPermanentEvents = true;
             marine.Tasks.ClearImmediately();
             marine.Inventory.GiveFlashlight();
-            marine.Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_ASSAULTRIFLE"), 100, true);
+
+            WeaponAsset assaultRifle = new WeaponAsset("WEAPON_ASSAULTRIFLE");
+            marine.Inventory.GiveNewWeapon(assaultRifle, 100, true);
+            marine.Inventory.AddComponentToWeapon(assaultRifle, "COMPONENT_AT_AR_FLSH");
+            marine.Inventory.AddComponentToWeapon(assaultRifle, "COMPONENT_AT_SCOPE_MACRO");
+            marine.Inventory.AddComponentToWeapon(assaultRifle, "COMPONENT_AT_AR_AFGRIP");
 
             return marine;
         }
