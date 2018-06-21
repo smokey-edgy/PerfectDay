@@ -52,6 +52,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AmbulanceIncident.cs" />
+    <Compile Include="BlackoutScenario.cs" />
+    <Compile Include="RisingFluCasesScenario.cs" />
     <Compile Include="TrafficJamScenario.cs" />
     <Compile Include="ZombieScenario.cs" />
     <Compile Include="MilitaryBlockadeScenario.cs" />
