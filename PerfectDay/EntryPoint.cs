@@ -340,14 +340,14 @@ namespace PerfectDay
         {           
             while (true)
             {
-                //Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
-                //Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
-                //Rage.Native.NativeFunction.Natives.SET_FAR_DRAW_VEHICLES(1);
-                //Rage.Native.NativeFunction.Natives.POPULATE_NOW();
-                Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(0.0f);
-                Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(0.0f);
-                Rage.Native.NativeFunction.Natives.SET_FAR_DRAW_VEHICLES(0);
+                Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
+                Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
+                Rage.Native.NativeFunction.Natives.SET_FAR_DRAW_VEHICLES(1);
                 Rage.Native.NativeFunction.Natives.POPULATE_NOW();
+                //Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(0.0f);
+                //Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(0.0f);
+                //Rage.Native.NativeFunction.Natives.SET_FAR_DRAW_VEHICLES(0);
+                //Rage.Native.NativeFunction.Natives.POPULATE_NOW();
                 GameFiber.Yield();
             }
         }
