@@ -33,7 +33,7 @@ namespace PerfectDay
             GameFiber.StartNew(IncreaseTraffic);
             //GameFiber.StartNew(CreateMayhemAndPanic);
         }
-
+      
         [Rage.Attributes.ConsoleCommand(Description = "Create an emergency incident", Name = "Emergency")]
         public static void CreateEmergencyIncident()
         {
