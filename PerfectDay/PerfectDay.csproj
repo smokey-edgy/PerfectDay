@@ -55,6 +55,7 @@
     <Compile Include="BlackoutScenario.cs" />
     <Compile Include="RisingFluCasesScenario.cs" />
     <Compile Include="TrafficJamScenario.cs" />
+    <Compile Include="Zombie.cs" />
     <Compile Include="ZombieScenario.cs" />
     <Compile Include="MilitaryBlockadeScenario.cs" />
     <Compile Include="PedExtensions.cs" />

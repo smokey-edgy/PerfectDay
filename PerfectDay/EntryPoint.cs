@@ -351,7 +351,18 @@ namespace PerfectDay
                 GameFiber.Yield();
             }
         }
-        
+
+        [Rage.Attributes.ConsoleCommand(Description = "Zombify someone nearby", Name = "Zombify")]
+        public static void Zombify()
+        {
+            Ped playerPed = Game.LocalPlayer.Character;
+            Ped[] nearbyPeds = playerPed.GetNearbyPeds(1);
+            foreach(Ped ped in nearbyPeds)
+            {
+                Zombie zombie = new Zombie(ped);
+                zombie.Zombify();
+            }
+        }
         [Rage.Attributes.ConsoleCommand(Description = "Spawns a zombie", Name = "SpawnZombie")]
         public static void Command_SpawnZombie(int howMany)
         {
