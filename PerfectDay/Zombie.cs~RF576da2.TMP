@@ -70,7 +70,8 @@ namespace PerfectDay
                         case ZombieState.Attacking:
                             ZombifyTarget();
                             break;                        
-                    }                    
+                    }
+                    Game.Console.Print("****** ZOMBIE IS " + State);
                     GameFiber.Yield();
                 }
             });
