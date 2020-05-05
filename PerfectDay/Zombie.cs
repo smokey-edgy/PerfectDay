@@ -12,13 +12,14 @@ namespace PerfectDay
         StandingStill,
         Wandering,
         Pursuing,
-        Attacking,
-        Dead
+        Attacking
     }  
 
     class Zombie
     {
         private Ped Ped;
+        private static List<Zombie> Zombies = new List<Zombie>();
+        private static Ped Leader;
         private Ped Target;
         private ZombieState State;
 
@@ -28,6 +29,9 @@ namespace PerfectDay
         public Zombie(Ped ped)
         {
             Ped = ped;
+            if (Leader == null)
+                Leader = Ped;
+            Zombies.Add(this);
         }
 
         public void Zombify()
@@ -78,7 +82,6 @@ namespace PerfectDay
 
         private void Wander()
         {
-            GameFiber.Sleep(5000);
             Ped.Tasks.Clear();
             Ped.Tasks.Wander();
             State = ZombieState.Wandering;       
@@ -86,16 +89,22 @@ namespace PerfectDay
 
         private void LookForClosestTarget()
         {
+            if (Ped != Leader)
+                return;
+
             Ped[] nearbyPeds = Ped.GetNearbyPeds(5);            
             foreach (Ped nearbyPed in nearbyPeds)
             {            
                 if (nearbyPed.RelationshipGroup != ZombiesGroup)
                 {
-                    Ped.MovementAnimationSet = ZombieWalk;
-                    Ped.Tasks.Clear();
-                    Ped.Tasks.FollowToOffsetFromEntity(nearbyPed, Vector3.Zero);
-                    Target = nearbyPed;
-                    State = ZombieState.Pursuing;
+                    foreach (Zombie zombie in Zombies)
+                    {
+                        zombie.Ped.MovementAnimationSet = ZombieWalk;
+                        zombie.Ped.Tasks.Clear();
+                        zombie.Ped.Tasks.FollowToOffsetFromEntity(nearbyPed, Vector3.Zero);
+                        zombie.Target = nearbyPed;
+                        zombie.State = ZombieState.Pursuing;
+                    }    
                     break;
                 }
             }

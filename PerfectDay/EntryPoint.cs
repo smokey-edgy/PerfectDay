@@ -33,7 +33,56 @@ namespace PerfectDay
             GameFiber.StartNew(IncreaseTraffic);
             //GameFiber.StartNew(CreateMayhemAndPanic);
         }
-      
+
+        [Rage.Attributes.ConsoleCommand(Description = "Stop Traffic Ahead", Name = "StopTrafficAhead")]
+        public static void StopTrafficAhead()
+        {
+
+            //Vehicle car = (Vehicle) World.GetClosestEntity(pos, 10.0f, GetEntitiesFlags.ConsiderCars);
+            //foreach (Vehicle vehicle in World.GetAllVehicles())
+            //{
+            //    if (vehicle.IsCar && )
+            //        vehicle.TopSpeed = 0;
+            //}
+            
+
+            Model model;
+            do
+            {
+                model = Model.RandomVehicleModel;
+            } while (!model.IsCar);
+
+            Vehicle playerVehicle = Game.LocalPlayer.Character.LastVehicle;
+            float heading;
+            Vector3 closestVehicleCoords;
+            //Rage.Native.NativeFunction.Natives.GET_NTH_CLOSEST_VEHICLE_NODE_FAVOUR_DIRECTION(pos.X, pos.Y, pos.Z, pos.X, pos.Y, pos.Z, 50, out closestVehicleCoords, out heading, 1, 3, 0);
+
+            Vector3 pos = GetAnEmptyPositionOnStreet();            
+           
+            Rage.Native.NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(pos.X, pos.Y, pos.Z, out closestVehicleCoords, out heading, 1, 3, 0);
+            Vehicle vehicle = new Vehicle(model, closestVehicleCoords, playerVehicle.Heading);
+            Rage.Native.NativeFunction.Natives.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle);
+            //first car in the jam is gonna have a zombie
+            Ped driver = vehicle.CreateRandomDriver();
+            driver.Tasks.Clear();
+            //driver.Tasks.CruiseWithVehicle(playerVehicle.Speed);
+            
+        }
+
+        private static Vector3 GetAnEmptyPositionOnStreet()
+        {          
+            Vector3 nextPos = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.GetOffsetPositionFront(30.0f));
+           
+            while (true)
+            {
+                Entity[] vehicles = World.GetEntities(nextPos, 10.0f, GetEntitiesFlags.ConsiderAllVehicles);
+                if (vehicles.Length == 0)
+                    return nextPos;
+                else
+                    nextPos = World.GetNextPositionOnStreet(vehicles[0].GetOffsetPositionFront(10.0f));
+            }            
+        }
+
         [Rage.Attributes.ConsoleCommand(Description = "Create an emergency incident", Name = "Emergency")]
         public static void CreateEmergencyIncident()
         {
@@ -48,7 +97,7 @@ namespace PerfectDay
 
 
 
-        
+        [Rage.Attributes.ConsoleCommand(Description = "Create an emergency incident", Name = "Emergency2")]
         public static void spawnZombieEmergencyIncident2()
         {
             
@@ -340,9 +389,11 @@ namespace PerfectDay
         {           
             while (true)
             {
-                Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
-                Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(100.0f);
+                Rage.Native.NativeFunction.Natives.SET_VEHICLE_POPULATION_BUDGET(3);
+                Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(1.0f);
+                Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(1.0f);
                 Rage.Native.NativeFunction.Natives.SET_FAR_DRAW_VEHICLES(1);
+                
                 Rage.Native.NativeFunction.Natives.POPULATE_NOW();
                 //Rage.Native.NativeFunction.Natives.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(0.0f);
                 //Rage.Native.NativeFunction.Natives.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME(0.0f);
